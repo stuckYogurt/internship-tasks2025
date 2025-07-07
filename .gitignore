@@ -39,3 +39,9 @@
 
 # debug information files
 *.dwo
+
+.gitignore
+./1.1/bin/
+.idea/
+.vscode/
+.DS_Store/
