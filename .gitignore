@@ -41,7 +41,8 @@
 *.dwo
 
 .gitignore
-./1.1/bin/
+1.1/bin/
 .idea/
 .vscode/
 .DS_Store/
+1.1/tests/

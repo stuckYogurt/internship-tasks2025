@@ -42,6 +42,7 @@ int main() {
                 graph.emplaceNode(request.front());
                 request.pop();
                 cout << "Created node"<<endl;
+                continue;
             }
 
             if (request.front() == "EDGE") {
@@ -62,11 +63,15 @@ int main() {
                 } else if (!src) {
                     cout << "Unknown node " << src_name << endl;
                     continue;
+                } else if (!drain) {
+                    cout << "Unknown node " << drain_name << endl;
+                    continue;
                 }
 
                 graph.connect(src, drain, weight);
 
                 cout << "Created edge" << endl;
+                continue;
             }
 
             if (request.front() == "REMOVE") {
@@ -94,12 +99,16 @@ int main() {
                     } else if (!src) {
                         cout << "Unknown node " << src_name << endl;
                         continue;
+                    } else if (!drain) {
+                        cout << "Unknown node " << drain_name << endl;
+                        continue;
                     }
 
                     graph.disconnect(src, drain);
                     cout << "Removed edge" << endl;
-                    
+
                 }
+                continue;
             }
 
             if (request.front() == "RPO_NUMBERING") {
@@ -108,13 +117,17 @@ int main() {
                 request.pop();
 
                 if (!graph.getNode(target)) {
-                    cout << "Unknown node " << target;
+                    cout << "Unknown node " << target << endl;
                     continue;
                 }
 
                 graph.RPO_Numbering(target);
+                continue;
             }
+
+            request.pop(); // if command is undefined
         }
     }
 
 }
+

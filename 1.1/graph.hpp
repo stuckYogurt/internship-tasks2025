@@ -202,6 +202,7 @@ public:
     void removeNode(const std::string& mark) {
         if (!getNode(mark)) {
             std::cout<< "Unknown node " << mark << std::endl;
+            return;
         }
 
         for (auto i = edges.begin(); i != edges.end(); i++)
@@ -221,7 +222,7 @@ public:
 
     void emplaceNode(std::string& mark) {
         // avoiding repeats
-        if (getNode(mark) != nullptr) {
+        if (getNode(mark)) {
             std::cout << "tried creating already existing node " << mark << std::endl;
             return;
         }
@@ -236,9 +237,10 @@ public:
 
     void disconnect(Node* src, Node* drain) {
         for (auto i = edges.begin(); i != edges.end(); i++)
-            if ((*i)->getSrc() == src && (*i)->getDrain() == drain)
+            if ((*i)->getSrc() == src && (*i)->getDrain() == drain) {
                 edges.erase(i);
-
+                return;
+            }
     }
 
 

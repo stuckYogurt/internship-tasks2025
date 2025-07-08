@@ -1,5 +1,8 @@
 CXX = g++
 BUILD_DIR = bin
+TEST_DIR = tests
+
+
 
 .PHONY: build clean test
 build: main.cpp $(BUILD_DIR)
@@ -11,8 +14,10 @@ $(BUILD_DIR):
 
 
 
-test: build
+test: build tests
 	python3 test.py
+	cat $(wildcard $(TEST_DIR)/*.txt) | $(BUILD_DIR)/main
+	
 
 clean:
-	rm -f main
+	rm -f $(BUILD_DIR)/main
