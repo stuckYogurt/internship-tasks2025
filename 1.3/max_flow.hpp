@@ -48,10 +48,10 @@ EDGE_WEIGHT_T long maxFlow(Graph& graph, Node* src, Node* drain) {
     while (path) {
         EDGE_WEIGHT_T min_pathFlow = (*path)[0]->getWeight();
         for (auto i : *path)
-            min_pathFlow = std::min(min_pathFlow, i->getWeight());
+            min_pathFlow = std::min(min_pathFlow, flow[i->getId()]);
 
         for (auto i : *path) {
-            flow[i->getId()] -= std::max(min_pathFlow, 0u);
+            flow[i->getId()] -= std::max(min_pathFlow, (EDGE_WEIGHT_T&&)0);
             resulting_flow[i->getId()] += min_pathFlow;
         }
 

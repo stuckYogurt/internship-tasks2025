@@ -41,8 +41,9 @@ def generate_test_case(num_nodes, num_edges, weight_range=(1, 100), remove_prob=
     
     
     if nodes:
-        root = random.choice(nodes)
-        commands.append(f"DIJKSTRA {root}")
+        src, drain = random.sample(nodes, 2)
+        
+        commands.append(f"MAX FLOW {src} {drain}")
     
     return commands
 
@@ -163,7 +164,8 @@ class Validator:
                 
                 continue
                     
-            if splits[0] == "MAX_FLOW":
+            if splits[0] == "MAX":
+                splits.pop(0)
                 splits.pop(0)
                 src = splits[0]
                 sink = splits[1]
@@ -181,7 +183,8 @@ class Validator:
                     continue
 
                 flow_value, flow_dict = nx.maximum_flow(self.graph, src, sink)
-                output += flow_value + "\n"
+                print("LOL")
+                output += str(flow_value) + "\n"
                 continue
                 
             if splits[0] == "TARJAN":
@@ -259,14 +262,17 @@ def generate_files():
 
 
 
-# files_list = generate_files()
+
+# generate_files()
 files_list = ["tests/test_normal_1.txt"]
+
+
 
 for file_path in files_list:
     validator = Validator()
     with open(file_path, 'r') as f:
         file_start = f.tell()
-        process_out = subprocess.check_output(["bin/main"], stdin=f)
+        process_out = subprocess.check_output(["bin/main"], stdin=f).decode("utf-8")
         print(str(process_out) + "\n")
 
 

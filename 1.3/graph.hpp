@@ -71,7 +71,7 @@ public:
     Node& operator=(Node&&) = default;
 
     ~Node () {
-        std::cout << "Deleting node " << mark << std::endl;
+        // std::cout << "Deleting node " << mark << std::endl;
         for (auto i : InEdges)
             i->getSrc()->disconnectEdge(i, Direction::Out);
 
@@ -165,7 +165,7 @@ Edge::~Edge () {
     src->disconnectEdge(this, Direction::Out);
     drain->disconnectEdge(this, Direction::In);
 
-    std::cout << "Disconnected " << src->getMark() << " from " << drain->getMark() << std::endl;
+    // std::cout << "Disconnected " << src->getMark() << " from " << drain->getMark() << std::endl;
 }
 
 EDGE_WEIGHT_T Edge::getWeight() const {
@@ -219,6 +219,11 @@ public:
                 i--;
             }
 
+        // update edges' id
+        for (uns i = 0; i < edges.size(); i++) {
+            edges[i]->setId(i);
+        }
+
         auto target_id = getNode(mark)->getId();
         nodes.erase(nodes.begin() + (signed)target_id);
 
@@ -262,8 +267,9 @@ public:
     }
 
     void disconnect(Node* src, Node* drain) {
-        if (getEdge(src, drain)) {
+        if (!getEdge(src, drain)) {
             std::cout << "Unknown edge " << src->getMark() << " " << drain->getMark() << std::endl;
+            return;
         }
 
         uns long target_id = getEdge(src, drain)->getId();
@@ -315,3 +321,4 @@ public:
     }
 
 };
+

@@ -19,7 +19,7 @@ using namespace std;
 int main() {
     std::string input_line;
 
-    cout<< "Type \"exit\" to exit" << endl;
+    // cout<< "Type \"exit\" to exit" << endl;
 
     // graph initialization
     Graph graph;
@@ -41,7 +41,7 @@ int main() {
                 request.pop();
                 graph.emplaceNode(request.front());
                 request.pop();
-                cout << "Created node"<<endl;
+                // cout << "Created node"<<endl;
                 continue;
             }
 
@@ -70,7 +70,7 @@ int main() {
 
                 graph.connect(src, drain, weight);
 
-                cout << "Created edge" << endl;
+                // cout << "Created edge" << endl;
                 continue;
             }
 
@@ -79,10 +79,17 @@ int main() {
 
                 if (request.front() == "NODE") {
                     request.pop();
-                    graph.removeNode(request.front());
+                    auto target = request.front();
                     request.pop();
-                    cout << "Removed node" << endl;
+
+                    if (!graph.getNode(target)) {
+                        cout << "Unknown node " << target << endl;
+                        continue;
+                    }
+                    graph.removeNode(target);
+                    // cout << "Removed node" << endl;
                 }
+
                 else if (request.front() == "EDGE") {
                     request.pop();
 
@@ -105,7 +112,7 @@ int main() {
                     }
 
                     graph.disconnect(src, drain);
-                    cout << "Removed edge" << endl;
+                    // cout << "Removed edge" << endl;
 
                 }
                 continue;
