@@ -4,6 +4,7 @@ from itertools import permutations
 
 import subprocess
 import networkx as nx
+import matplotlib.pyplot as plt
 
 def generate_test_case(num_nodes, num_edges, weight_range=(1, 100), remove_prob=0.2):
     nodes = []
@@ -53,6 +54,25 @@ class Validator:
     def __init__(self):
         self.graph = nx.DiGraph()
         self.node_labels = set()
+
+    def visualize_graph(self):
+        pos = nx.spring_layout(self.graph)
+        plt.figure(figsize=(10, 8))
+        
+        # Рисуем узлы
+        nx.draw_networkx_nodes(self.graph, pos, node_size=700, node_color='skyblue')
+        
+        # Рисуем рёбра с весами
+        nx.draw_networkx_edges(self.graph, pos, arrowstyle='->', arrowsize=20)
+        edge_labels = nx.get_edge_attributes(self.graph, 'weight')
+        nx.draw_networkx_edge_labels(self.graph, pos, edge_labels=edge_labels)
+        
+        # Подписи узлов
+        nx.draw_networkx_labels(self.graph, pos, font_size=12)
+        
+        plt.title("Graph Visualization")
+        plt.axis('off')
+        plt.show()
     
     def process_command(self, command):
         splits = command.strip().replace("\n", "").split()
@@ -171,7 +191,7 @@ class Validator:
                 sink = splits[1]
                 splits.pop(0)
                 splits.pop(0)
-            
+
                 if src not in self.node_labels and sink not in self.node_labels:
                     output += f"Unknown nodes {src} {sink}\n"
                     continue
@@ -182,8 +202,7 @@ class Validator:
                     output += f"Unknown node {sink}\n"
                     continue
 
-                flow_value, flow_dict = nx.maximum_flow(self.graph, src, sink)
-                print("LOL")
+                flow_value, flow_dict = nx.maximum_flow(self.graph, src, sink, capacity="weight")
                 output += str(flow_value) + "\n"
                 continue
                 
@@ -200,8 +219,8 @@ class Validator:
                 continue
                     
             # may be unused
-            # if splits[0] == "VISUALIZE":
-            #     self.visualize_graph()
+            if splits[0] == "VISUALIZE":
+                self.visualize_graph()
               
             # if not a command
             splits.pop(0)
@@ -251,9 +270,9 @@ def generate_files():
     
     # Генерация большого теста
     big_test = generate_test_case(
-        num_nodes=25,
+        num_nodes=30,
         num_edges=50,
-        remove_prob=0.1
+        remove_prob=0.05
     )
     write_file("tests/test_big.txt", big_test)
     generated_files += ["tests/test_big.txt"]
@@ -263,19 +282,28 @@ def generate_files():
 
 
 
-# generate_files()
-files_list = ["tests/test_normal_1.txt"]
+files_list = generate_files()
+# files_list = ["tests/test_normal_1.txt"]
 
 
 
 for file_path in files_list:
     validator = Validator()
     with open(file_path, 'r') as f:
+        print('-'*20)
+        print("Script:\n")
         file_start = f.tell()
         process_out = subprocess.check_output(["bin/main"], stdin=f).decode("utf-8")
-        print(str(process_out) + "\n")
+        print(process_out)
 
 
+        print("Validator:\n")
         f.seek(file_start)
         validator_out = validator.process_command((" ".join(f.readlines())).replace("\n", ""))
         print(validator_out)
+
+        if (process_out == validator_out):
+            print("all good")
+        else:
+            print("ERROR might be present")
+        print('-'*20 + "\n")
