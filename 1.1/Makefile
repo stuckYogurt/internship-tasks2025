@@ -16,7 +16,6 @@ $(BUILD_DIR):
 
 test: build tests
 	python3 test.py
-	cat $(wildcard $(TEST_DIR)/*.txt) | $(BUILD_DIR)/main
 	
 
 clean:

@@ -4,8 +4,10 @@
 #include <queue>
 #include <memory>
 
+#include <limits>
+
 #define uns unsigned
-#define EDGE_WEIGHT_TYPE uns             // weight type for edge
+#define EDGE_WEIGHT_T uns             // weight type for edge
 
 enum Direction {
     No, In, Out
@@ -23,11 +25,11 @@ private:
     Node* src;
     Node* drain;
 
-    EDGE_WEIGHT_TYPE weight = 0;
+    EDGE_WEIGHT_T weight = 0;
+    uns long id;
 public:
-    Edge(Node* src, Node* drain);
 
-    Edge(Node* src, Node* drain, EDGE_WEIGHT_TYPE weight);
+    Edge(Node* src, Node* drain, EDGE_WEIGHT_T weight, uns long id);
 
     // move only semantic to ensure deletion won't be triggered
     Edge(const Edge&) = delete;
@@ -38,7 +40,11 @@ public:
 
     ~Edge();
 
-    EDGE_WEIGHT_TYPE getWeight() const;
+    uns long getId() {return id;}
+
+    void setId(uns long _) {id = _;}
+
+    EDGE_WEIGHT_T getWeight() const;
 
     Node* getSrc();
 
@@ -65,7 +71,7 @@ public:
     Node& operator=(Node&&) = default;
 
     ~Node () {
-        std::cout << "Deleting node " << mark << std::endl;
+        // std::cout << "Deleting node " << mark << std::endl;
         for (auto i : InEdges)
             i->getSrc()->disconnectEdge(i, Direction::Out);
 
@@ -149,13 +155,7 @@ public:
 };
 
 
-
-Edge::Edge(Node* src, Node* drain) : src(src), drain(drain) {
-    src->connectEdge(this, Direction::Out);
-    drain->connectEdge(this, Direction::In);
-}
-
-Edge::Edge(Node* src, Node* drain, EDGE_WEIGHT_TYPE weight) : src(src), drain(drain), weight(weight) {
+Edge::Edge(Node* src, Node* drain, EDGE_WEIGHT_T weight, u_long id) : src(src), drain(drain), weight(weight), id(id) {
     src->connectEdge(this, Direction::Out);
     drain->connectEdge(this, Direction::In);
 }
@@ -165,10 +165,10 @@ Edge::~Edge () {
     src->disconnectEdge(this, Direction::Out);
     drain->disconnectEdge(this, Direction::In);
 
-    std::cout << "Disconnected " << src->getMark() << " from " << drain->getMark() << std::endl;
+    // std::cout << "Disconnected " << src->getMark() << " from " << drain->getMark() << std::endl;
 }
 
-EDGE_WEIGHT_TYPE Edge::getWeight() const {
+EDGE_WEIGHT_T Edge::getWeight() const {
     return weight;
 }
 
@@ -198,6 +198,14 @@ public:
         return nullptr;
     }
 
+    Node* getNode(uns long id) {
+        return nodes[id].get();
+    }
+
+    size_t getNodesCount() {
+        return nodes.size();
+    }
+
     // first disconnects linked edges, then the node
     void removeNode(const std::string& mark) {
         if (!getNode(mark)) {
@@ -210,6 +218,11 @@ public:
                 edges.erase(i);
                 i--;
             }
+
+        // update edges' id
+        for (uns i = 0; i < edges.size(); i++) {
+            edges[i]->setId(i);
+        }
 
         auto target_id = getNode(mark)->getId();
         nodes.erase(nodes.begin() + (signed)target_id);
@@ -230,21 +243,46 @@ public:
         nodes.emplace_back(new Node(mark, nodes.size()));
     }
 
+
+
+    Edge* getEdge(Node* src, Node* drain) {
+        for (auto i : src->getOutEdges())
+            if (i->getDrain() == drain)
+                return i;
+
+        return nullptr;
+    }
+
+    Edge* getEdge(uns long id) {
+        return edges[id].get();
+    }
+
+    size_t getEdgesCount() {
+        return edges.size();
+    }
+
     // assume input is correct: connection is new, nodes exist
-    void connect(Node* src, Node* drain, EDGE_WEIGHT_TYPE weight) {
-        edges.emplace_back(new Edge(src, drain, weight));
+    void connect(Node* src, Node* drain, EDGE_WEIGHT_T weight) {
+        edges.emplace_back(new Edge(src, drain, weight, edges.size()));
     }
 
     void disconnect(Node* src, Node* drain) {
-        for (auto i = edges.begin(); i != edges.end(); i++)
-            if ((*i)->getSrc() == src && (*i)->getDrain() == drain) {
-                edges.erase(i);
-                return;
-            }
+        if (!getEdge(src, drain)) {
+            std::cout << "Unknown edge " << src->getMark() << " " << drain->getMark() << std::endl;
+            return;
+        }
+
+        uns long target_id = getEdge(src, drain)->getId();
+        edges.erase(edges.begin() + (signed)target_id);
+
+        // updating ids
+        for (uns i = target_id; i < edges.size(); i++) {
+            edges[i]->setId(i);
+        }
     }
 
 
-    // Topological sort
+// Topological sort
 private:
     void DFS(uns long root_node, std::vector<Color>& colors, std::stack<uns long>* numbering) {
         colors[root_node] = Color::Gray;
@@ -283,3 +321,4 @@ public:
     }
 
 };
+
