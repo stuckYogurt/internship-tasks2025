@@ -24,6 +24,8 @@ void Dijkstra_path(Graph& graph, Node* root_node) {
 
         visited[v] = true;
         auto edges = graph.getNode(v)->getOutEdges();
+        
+        // additional check on integer overflow needed
         for (auto e : edges)
             (*distances)[e->getDrain()->getId()] = std::min((*distances)[e->getDrain()->getId()],
                 (*distances)[v] == std::numeric_limits<EDGE_WEIGHT_T>::max() ? std::numeric_limits<EDGE_WEIGHT_T>::max() : (*distances)[v] + e->getWeight());

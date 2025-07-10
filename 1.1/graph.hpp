@@ -26,12 +26,14 @@ private:
     Node* drain;
 
     EDGE_WEIGHT_T weight = 0;
+    // index in Graph's vector edges
     uns long id;
 public:
 
     Edge(Node* src, Node* drain, EDGE_WEIGHT_T weight, uns long id);
 
-    // move only semantic to ensure deletion won't be triggered
+    // move only semantic to ensure deconstructor won't be triggered
+    // deleting instance means physical deletion from graph: nodes' disconnection evoked
     Edge(const Edge&) = delete;
     Edge& operator=(const Edge&) = delete;
 
@@ -58,12 +60,12 @@ private:
     std::set<Edge*> OutEdges;
     std::string mark;
 
-    // place in the graph's vector of nodes
+    // index in Graph's vector nodes
     unsigned long id;
 public:
     explicit Node(std::string& mark, unsigned long id) : mark(mark), id(id) {}
 
-    // move only semantic to ensure deletion won't be triggered in some cases
+    // move only semantic to ensure deconstructor won't be triggered in some cases
     Node(const Node&) = delete;
     Node& operator=(const Node&) = delete;
 
@@ -91,7 +93,7 @@ public:
         id = _;
     }
 
-    // not used apart edge deletion
+    
     void connectEdge(Edge* edge, const Direction dir) {
         if (dir == Direction::In) {
             if (InEdges.find(edge) == InEdges.end()) {
@@ -110,6 +112,7 @@ public:
         std::cout << "Tried connecting " << (void*)edge << "(OUT) with " << mark << ", connection exists" << std::endl;
     }
 
+    // not used apart edge deletion
     void disconnectEdge(Edge* edge, const Direction dir) {
         if (dir == Direction::In) {
             if (InEdges.find(edge) != InEdges.end()) {

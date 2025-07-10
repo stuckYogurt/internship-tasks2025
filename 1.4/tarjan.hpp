@@ -1,4 +1,5 @@
 #include "graph.hpp"
+#include <functional>
 
 // find strongly connected components
 void Tarjan(Graph& graph, Node* root) {

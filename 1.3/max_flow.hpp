@@ -2,7 +2,7 @@
 
 std::vector<Edge*>* findPath(Graph& graph, Node* src, Node* drain, std::vector<EDGE_WEIGHT_T>& flow) {
     std::queue<Node*> Q;
-    std::vector<Edge*> parents(graph.getNodesCount(), nullptr); // which edge lead to the Node
+    std::vector<Edge*> parents(graph.getNodesCount(), nullptr); // to backtrack the path
     std::vector<bool> visited(graph.getNodesCount(), false);
     visited[src->getId()] = true;
 
@@ -37,7 +37,7 @@ std::vector<Edge*>* findPath(Graph& graph, Node* src, Node* drain, std::vector<E
     return nullptr;
 }
 
-EDGE_WEIGHT_T long maxFlow(Graph& graph, Node* src, Node* drain) {
+EDGE_WEIGHT_T maxFlow(Graph& graph, Node* src, Node* drain) {
     std::vector<EDGE_WEIGHT_T> flow(graph.getEdgesCount());
     std::vector<EDGE_WEIGHT_T> resulting_flow(graph.getEdgesCount(), 0);
 
