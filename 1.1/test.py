@@ -281,8 +281,8 @@ def generate_files():
 
 
 
-# files_list = generate_files()
-files_list = ["tests/test_normal_3.txt"]
+files_list = generate_files()
+# files_list = ["tests/test_normal_3.txt"]
 
 
 

@@ -12,11 +12,14 @@ $(BUILD_DIR):
 	mkdir -p $@
 	touch $@
 
-
+$(TEST_DIR):
+	mkdir -p $@
+	touch $@
 
 test: build tests
 	python3 test.py
 	
+
 
 clean:
 	rm -f $(BUILD_DIR)/main
