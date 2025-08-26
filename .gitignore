@@ -63,3 +63,10 @@
 
 5th\ week/llvm-basic-pass-main/src/include/
 
+final_task/IRs/input.ll
+final_task/llvm-basic-pass-main/build/*
+!final_task/llvm-basic-pass-main/build/CMakeLists.txt
+
+final_task/llvm-basic-pass-main/src/include/
+final_task/llvm-basic-pass-main/LICENSE
+
