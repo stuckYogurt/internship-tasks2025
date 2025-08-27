@@ -8,6 +8,8 @@
 
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/Analysis.h"
+#include "llvm/IR/BasicBlock.h"
+#include "llvm/IR/IRBuilder.h"
 
 #include "llvm/Support/raw_ostream.h"
 
@@ -31,7 +33,7 @@ namespace {
 // includes saving last node's descendants
 
 struct ExtendedPreOrder {
-    std::vector<BasicBlock*> node;       // RPO[id] = ptr
+    std::vector<BasicBlock*> node;      // RPO[id] = ptr
     std::vector<unsigned> last;         // last[par_id] = max_succ_id
     std::map<BasicBlock*, uns> number;  // number[elem] = id
 };
@@ -225,11 +227,109 @@ public:
 
 struct LICMPass : PassInfoMixin<LICMPass> 
 {
-    PreservedAnalyses 
-    run( Function &Function, 
-	 FunctionAnalysisManager &AM) 
-    {
+    bool isLoopMember(LoopNestingTree& LoopNesting, uns targetLoop, uns BB) {
+        uns headIter = LoopNesting.headers[BB];
+        while (headIter != 0) {
+            if (headIter == targetLoop) {
+                return true;
+            }
+
+            headIter = LoopNesting.headers[headIter];
+        }
+
+        return false;
+    }
+
+    BasicBlock* insertBBBetween(std::vector<BasicBlock*> predsBB, BasicBlock* succBB) {
+        auto newBB = BasicBlock::Create(succBB->getContext(), "", succBB->getParent());
+        newBB->moveAfter(predsBB[0]);
+
+        for (auto predBB : predsBB) {
+            auto terminator = predBB->getTerminator();
+            terminator->replaceUsesOfWith(succBB, newBB);
+        }
+
+        IRBuilder<> Builder(newBB);
+        Builder.CreateBr(succBB);
+
+        return newBB;
+    }
+
+    #define insertPreheader insertBBBetween
+
+    void moveToPreheader(LoopNestingTree& LoopNesting, Instruction* targetInst, uns targetLoop) {
+        auto Loop = LoopNesting.PreOrder.node[targetLoop];
         
+        std::vector<BasicBlock*> preheaderCandidates;
+        for (auto pred : predecessors(Loop)) {
+            uns predPO = LoopNesting.PreOrder.number[pred];
+            if (!isLoopMember(LoopNesting, targetLoop, predPO)) {
+                preheaderCandidates.push_back(pred);
+            }
+        }
+
+        // if unique non-loop pred, it's preheader
+        if (preheaderCandidates.size() == 1) {
+            targetInst->removeFromParent();
+            targetInst->insertInto(preheaderCandidates[0], preheaderCandidates[0]->begin());
+        }
+
+        // preheader insertion needed
+        else if (preheaderCandidates.size() > 1) {
+            auto preheader = insertPreheader(preheaderCandidates, Loop);
+            targetInst->removeFromParent();
+            targetInst->insertInto(preheaderCandidates[0], preheaderCandidates[0]->begin());
+        }
+
+        else errs() << "zero non-loop predecessors found!\n";
+    }
+
+
+    PreservedAnalyses 
+    run(Function &Function, 
+	    FunctionAnalysisManager &AM) 
+    {
+        LoopNestingTree LoopNesting = AM.getResult<LoopNestingTreePass>(Function);
+
+        
+
+        // iterate in reverse pre-order
+        for (uns BBlockPOrder = LoopNesting.headers.size() - 1; BBlockPOrder >= 0; --BBlockPOrder) {
+            // headers that suit algorithm
+            if (LoopNesting.types[BBlockPOrder] == BBlock_type::reducible || 
+                LoopNesting.types[BBlockPOrder] == BBlock_type::self) {
+
+                    bool Changed = true;
+                    while (Changed) {
+                        for (uns DescendantPO = BBlockPOrder; DescendantPO <= LoopNesting.PreOrder.last[BBlockPOrder]; ++DescendantPO) {
+                            if (LoopNesting.headers[DescendantPO] == BBlockPOrder) {
+                                for (auto& Def : *(LoopNesting.PreOrder.node[DescendantPO])) {
+                                    if (llvm::isa<llvm::LoadInst>(Def)) {
+                                        continue;
+                                    }
+
+                                    bool Move = true;
+                                    for (uns i = 0; i < Def.getNumOperands(); ++i) {
+                                        auto operand = Def.getOperand(i);
+                                        auto operandBB = dyn_cast<Instruction>(operand)->getParent();
+                                        uns operandBBPO = LoopNesting.PreOrder.number[operandBB];
+
+                                        if (isLoopMember(LoopNesting, BBlockPOrder, operandBBPO)) {
+                                            Move = false; break;
+                                        }
+                                    }
+
+                                    if (!Move) continue;
+                                    moveToPreheader(LoopNesting, &Def, BBlockPOrder);
+                                    Changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            
+
+        }
 
 
         return (PreservedAnalyses::none());
