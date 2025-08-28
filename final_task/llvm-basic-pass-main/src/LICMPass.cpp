@@ -60,15 +60,15 @@ public:
         workStack.push(&Function.getEntryBlock());
 
         while (!workStack.empty()) {
-            auto curr = workStack.top();
+            auto currBB = workStack.top();
             
-            if (!discovered[curr->getNumber()]) {
-                number[curr] = current;
-                node[current++] = curr;
-                discovered[curr->getNumber()] = true;
+            if (!discovered[currBB->getNumber()]) {
+                number[currBB] = current;
+                node[current++] = currBB;
+                discovered[currBB->getNumber()] = true;
 
-                auto currT = curr->getTerminator();
-                for (uns i = 0, n = currT->getNumSuccessors(); i < n; i++) {
+                auto currT = currBB->getTerminator();
+                for (uns i = 0; i < currT->getNumSuccessors(); i++) {
                     if (!discovered[currT->getSuccessor(i)->getNumber()]) {
                         workStack.push(currT->getSuccessor(i));
                     }
@@ -78,7 +78,7 @@ public:
             }
 
             workStack.pop();
-            last[number[curr]] = current - 1;
+            last[number[currBB]] = current - 1;
         }
 
         // errs() << "discovers!\n";
@@ -104,7 +104,6 @@ public:
 
 
         // shrinking return vectors
-        uns sumB = 0;
         for (auto iter = discovered.rbegin(); iter != discovered.rend(); ++iter) {
             if (!*iter) {
                 last.pop_back(); node.pop_back(); // if not discovered, it's not been put in these
@@ -165,8 +164,8 @@ public:
         std::vector<int> header(preOrderRes.last.size(), 0); // default header
         std::vector<BBlock_type> type(preOrderRes.last.size(), BBlock_type::nonheader);
 
-        std::vector<std::vector<uns>> nonBackPreds(preOrderRes.last.size());
-        std::vector<std::vector<uns>> backPreds(preOrderRes.last.size());
+        std::vector<std::set<uns>> nonBackPreds(preOrderRes.last.size());
+        std::vector<std::set<uns>> backPreds(preOrderRes.last.size());
 
         std::vector<std::set<uns>> unions(preOrderRes.last.size());
         for (uns i = 0; i < preOrderRes.last.size(); ++i) {
@@ -189,7 +188,7 @@ public:
             unions[v].clear();
         };
 
-        auto isAncestor = [&preOrderRes](uns v, uns w) {
+        auto isAncestor = [&preOrderRes](uns w, uns v) {
             return (w <= v) && (v <= preOrderRes.last[w]);
         };
         
@@ -198,17 +197,17 @@ public:
         for (uns w = 0; w < preOrderRes.last.size(); ++w) {
             auto currBB = preOrderRes.node[w];
             for ( auto it = pred_begin(currBB), et = pred_end(currBB); it != et; ++it) {
-                auto v = preOrderRes.number.at(*it);
+                auto v = preOrderRes.number[*it];
 
                 if (isAncestor(w, v)) {
-                    backPreds[w].push_back(v);
+                    backPreds[w].emplace(v);
                 } else {
-                    nonBackPreds[w].push_back(v);
+                    nonBackPreds[w].emplace(v);
                 }
             } 
         }
 
-        // header[0] = -1;
+        header[0] = -1;
 
         for (int w = preOrderRes.last.size() - 1; w >= 0; --w) {
             std::set<uns> P;
@@ -234,7 +233,7 @@ public:
                     auto y_ = (uns)FIND(y);
                     if (!isAncestor(w, y_)) {
                         type[w] = BBlock_type::irred;
-                        nonBackPreds[w].push_back(y_);
+                        nonBackPreds[w].emplace(y_);
                     } else if (P.find(y_) == P.end() && y_ != w) {
                         P.emplace(y_);
                         workList.push_back(y_);
@@ -270,8 +269,13 @@ struct LICMPass : PassInfoMixin<LICMPass>
 {
     bool isLoopMember(LoopNestingTree& LoopNesting, uns targetLoop, uns BB) {
         errs() << "entered isLoopMember \n";
+        if (BB == targetLoop) {
+            errs() << "yeah it's that simple\n";
+            return true;
+        }
+
         int headIter = LoopNesting.headers[BB];
-        while (headIter != 0) {
+        while (headIter != -1) {
             if (headIter == targetLoop) {
                 errs() << "exitting with true \n";
                 return true;
@@ -416,12 +420,10 @@ struct LICMPass : PassInfoMixin<LICMPass>
                     
                     while (Changed) {
                         Changed = false;
-                        
                         errs() << "here we go again\n";
                         
                         for (auto DescendantPO : LoopMembers[BBlockPOrder]) {
-                            if (UpdateFlag) break;
-
+                            
                             if (isLoopMember(LoopNesting, BBlockPOrder, DescendantPO)) {
                                 for (auto& Def : *(LoopNesting.PreOrder.node[DescendantPO])) {
                                     if (!isSafeToMove(&Def)) {
@@ -430,7 +432,7 @@ struct LICMPass : PassInfoMixin<LICMPass>
 
                                     bool Move = true;
                                     for (uns i = 0; i < Def.getNumOperands(); ++i) {
-                                        errs() << "instruction " << Def << "\n";
+                                        errs() << "instruction " << Def << " with " << LoopMembers[BBlockPOrder].size() << "\n";
                                         auto operand = Def.getOperand(i);
 
                                         errs() << "operand " << *operand << " at " << *LoopNesting.PreOrder.node[DescendantPO]->getTerminator() << "\n";
