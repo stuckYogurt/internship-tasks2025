@@ -57,13 +57,13 @@
 1.4/tests/
 1.4/bin/
 
-5th\ week/IRs/input.ll
+5th\ week/IRs/*
 5th\ week/llvm-basic-pass-main/build/*
 !5th\ week/llvm-basic-pass-main/build/CMakeLists.txt
 
 5th\ week/llvm-basic-pass-main/src/include/
 
-final_task/IRs/input.ll
+final_task/IRs/*
 final_task/llvm-basic-pass-main/build/*
 !final_task/llvm-basic-pass-main/build/CMakeLists.txt
 
