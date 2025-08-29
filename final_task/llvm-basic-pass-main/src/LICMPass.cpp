@@ -81,26 +81,6 @@ public:
             last[number[currBB]] = current - 1;
         }
 
-        // errs() << "discovers!\n";
-        // for (auto i : discovered) {
-        //     errs() << i << " ";
-        // }
-
-        // errs() << "lasters\n";
-        // for (auto i : last) {
-        //     errs() << i << " ";
-        // }
-
-        // errs() << "noders\n";
-        // for (auto i : node) {
-        //     errs() << i << " ";
-        // }
-
-        // errs() << "checking preorder num\n";
-        // for (auto& i : number) {
-        //     errs() << i.first << " " << i.second << "\n";
-        // } errs() << "\n\n\n";
-
 
 
         // shrinking return vectors
@@ -131,16 +111,6 @@ struct LoopNestingTree {
     std::vector<BBlock_type> types;
 };
 
-template<typename T>
-bool isVectorMember(std::vector<T>& vec, const T& val) {
-    for (auto& i : vec) {
-        if (i == val) {
-            return true;
-        }
-    }
-    return false;
-}
-
 // separate analysis pass
 class LoopNestingTreePass : public AnalysisInfoMixin<LoopNestingTreePass> {
     friend AnalysisInfoMixin<LoopNestingTreePass>;
@@ -149,7 +119,7 @@ public:
     using Result = LoopNestingTree;
     
     // Algorithm follows Paul Havlak's nesting loops algorithm
-    // Original denotement is saved accordingly 
+    // Original denotement is kept 
     Result run(Function& Function, FunctionAnalysisManager& AM) {
         errs() << "LoopNesting on " << Function.getName() << "\n";
         
@@ -179,8 +149,7 @@ public:
                 }
             }
 
-            errs() << "uhhh FIND\n";
-            return -1; // must not happen
+            llvm_unreachable("Failed to call FIND in LoopNestingTreePass, there might be an issue with CFG structure");
         };
 
         auto UNION = [&unions](uns v, uns w) -> void {
@@ -249,9 +218,9 @@ public:
         }
         errs() << "exitted LoopNesting\n";
 
-        errs() << "Headers: \n";
-        for (auto a : header) errs() << a << " ";
-        errs() << "\n";
+        // errs() << "Headers: \n";
+        // for (auto a : header) errs() << a << " ";
+        // errs() << "\n";
 
         return {preOrderRes, header, type};
     }
@@ -270,7 +239,6 @@ struct LICMPass : PassInfoMixin<LICMPass>
     bool isLoopMember(LoopNestingTree& LoopNesting, uns targetLoop, uns BB) {
         errs() << "entered isLoopMember \n";
         if (BB == targetLoop) {
-            errs() << "yeah it's that simple\n";
             return true;
         }
 
@@ -303,6 +271,7 @@ struct LICMPass : PassInfoMixin<LICMPass>
         return newBB;
     }
 
+
     #define insertPreheader insertBBBetween
 
     void moveToPreheader(LoopNestingTree& LoopNesting, Instruction* targetInst, uns targetLoop, std::set<uns>& LoopMembers) {
@@ -329,7 +298,6 @@ struct LICMPass : PassInfoMixin<LICMPass>
                 LoopEntryPointPO = member;
                 break;
             }
-            errs() << "switching...\n";
         }
         auto LoopEntryPoint = LoopNesting.PreOrder.node[LoopEntryPointPO];
 
@@ -383,7 +351,7 @@ struct LICMPass : PassInfoMixin<LICMPass>
     run(Function &Function, 
 	    FunctionAnalysisManager &AM) 
     {
-        errs() << "\n\nfunction: " << Function.getName() << "\n";
+        errs() << "\n\nAnalysis on function: " << Function.getName() << "\n";
         bool UpdateFlag = false;
         
         // when moving stuff, better keep things updated, might not be optimal
@@ -401,17 +369,15 @@ struct LICMPass : PassInfoMixin<LICMPass>
             } while (currHead != 0);
         }
 
-        errs() <<"types: \n";
-        for (uns i = 0; i < LoopNesting.types.size(); i++) {
+        // errs() <<"types: \n";
+        // for (uns i = 0; i < LoopNesting.types.size(); i++) {
 
-            errs() << LoopNesting.types[i] << " " << *LoopNesting.PreOrder.node[i]->getTerminator() <<'\n';
-        }
-        errs() << "\n";
-        // errs() << LoopNesting.headers.size() << " " << LoopNesting.types.size() << "\n";
+        //     errs() << LoopNesting.types[i] << " " << *LoopNesting.PreOrder.node[i]->getTerminator() <<'\n';
+        // }
+        // errs() << "\n";
 
         // iterate in reverse pre-order
         for (int BBlockPOrder = LoopNesting.headers.size() - 1; BBlockPOrder > 0; --BBlockPOrder) {
-            // errs() << "lol" << BBlockPOrder << " e\n";
             // headers that suit algorithm
             if (LoopNesting.types[BBlockPOrder] == BBlock_type::reducible || 
                 LoopNesting.types[BBlockPOrder] == BBlock_type::self) {
@@ -420,8 +386,6 @@ struct LICMPass : PassInfoMixin<LICMPass>
                     
                     while (Changed) {
                         Changed = false;
-                        errs() << "here we go again\n";
-                        
                         for (auto DescendantPO : LoopMembers[BBlockPOrder]) {
                             
                             if (isLoopMember(LoopNesting, BBlockPOrder, DescendantPO)) {
@@ -432,10 +396,10 @@ struct LICMPass : PassInfoMixin<LICMPass>
 
                                     bool Move = true;
                                     for (uns i = 0; i < Def.getNumOperands(); ++i) {
-                                        errs() << "instruction " << Def << " with " << LoopMembers[BBlockPOrder].size() << "\n";
+                                        // errs() << "instruction " << Def << " with " << LoopMembers[BBlockPOrder].size() << "\n";
                                         auto operand = Def.getOperand(i);
 
-                                        errs() << "operand " << *operand << " at " << *LoopNesting.PreOrder.node[DescendantPO]->getTerminator() << "\n";
+                                        // errs() << "operand " << *operand << " at " << *LoopNesting.PreOrder.node[DescendantPO]->getTerminator() << "\n";
                                         if (llvm::isa<llvm::Constant>(operand)) {
                                             continue;
                                         }
@@ -462,7 +426,7 @@ struct LICMPass : PassInfoMixin<LICMPass>
 
         }
 
-        errs() << "\n\n\n" << Function << "\n";
+        errs() << "Result:\n" << Function << "\n";
 
 
         return (PreservedAnalyses::none());
